@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miglo ERP – Seguimiento OC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --orange: #FE5E19;
+    --orange-light: #fff0eb;
+    --gray: #DCDCDC;
+    --gray-dark: #6b7280;
+    --gray-mid: #f3f4f6;
+    --white: #ffffff;
+    --text: #1a1a1a;
+    --green: #16a34a; --green-bg: #dcfce7;
+    --yellow: #d97706; --yellow-bg: #fef3c7;
+    --red: #dc2626; --red-bg: #fee2e2;
+    --radius: 10px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: var(--white); border-bottom: 3px solid var(--orange);
+    padding: 0 28px; display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo-box {
+    width: 36px; height: 36px; background: var(--orange);
+    border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  }
+  .logo-box svg { width: 20px; height: 20px; }
+  .brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand span { color: var(--orange); }
+  .subtitle { font-size: 11px; color: var(--gray-dark); }
+  .header-stats { display: flex; gap: 22px; }
+  .hstat-val { font-size: 20px; font-weight: 700; color: var(--orange); line-height: 1; text-align: right; }
+  .hstat-lbl { font-size: 10px; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.5px; text-align: right; }
+
+  .main { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+
+  .toolbar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--orange); color: white; border: none;
+    padding: 9px 18px; border-radius: var(--radius);
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary {
+    background: var(--white); color: var(--text);
+    border: 1.5px solid var(--gray); padding: 8px 16px; border-radius: var(--radius);
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+  .search-box {
+    flex: 1; min-width: 180px; padding: 8px 14px;
+    border: 1.5px solid var(--gray); border-radius: var(--radius);
+    font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
+  }
+  .search-box:focus { border-color: var(--orange); }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .pill {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1.5px solid var(--gray); background: white; color: var(--gray-dark);
+  }
+  .pill:hover { border-color: var(--orange); color: var(--orange); }
+  .pill.active { background: var(--orange); color: white; border-color: var(--orange); font-weight: 600; }
+
+  .oc-grid { display: flex; flex-direction: column; gap: 12px; }
+  .oc-card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); border-left: 4px solid var(--gray); overflow: hidden;
+  }
+  .oc-card.pendiente { border-left-color: var(--red); }
+  .oc-card.parcial { border-left-color: var(--yellow); }
+  .oc-card.completa { border-left-color: var(--green); }
+
+  .oc-header {
+    padding: 14px 18px; display: flex; align-items: center;
+    gap: 14px; cursor: pointer; user-select: none;
+  }
+  .oc-header:hover { background: var(--orange-light); }
+  .oc-num { font-size: 14px; font-weight: 700; color: var(--orange); min-width: 80px; }
+  .oc-client { font-size: 14px; font-weight: 600; flex: 1; }
+  .oc-date { font-size: 12px; color: var(--gray-dark); min-width: 90px; }
+  .oc-progress-wrap { min-width: 130px; display: flex; align-items: center; gap: 8px; }
+  .oc-progress-bar { flex: 1; height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
+  .oc-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+  .oc-pct { font-size: 12px; font-weight: 600; min-width: 34px; text-align: right; }
+  .badge {
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px; min-width: 72px; text-align: center;
+  }
+  .badge.pendiente { background: var(--red-bg); color: var(--red); }
+  .badge.parcial { background: var(--yellow-bg); color: var(--yellow); }
+  .badge.completa { background: var(--green-bg); color: var(--green); }
+  .chevron { color: var(--gray-dark); transition: transform 0.2s; font-size: 12px; }
+  .chevron.open { transform: rotate(180deg); }
+  .icon-btn {
+    background: none; border: 1.5px solid var(--gray); border-radius: 6px;
+    padding: 4px 8px; cursor: pointer; font-size: 13px;
+  }
+  .icon-btn:hover { border-color: var(--red); }
+
+  .oc-items { border-top: 1px solid var(--gray-mid); padding: 14px 18px 16px; display: none; }
+  .oc-items.open { display: block; }
+
+  .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .items-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-dark); font-weight: 600; padding: 6px 10px;
+    border-bottom: 1.5px solid var(--gray); background: var(--gray-mid);
+  }
+  .items-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-mid); vertical-align: middle; }
+  .items-table tr:last-child td { border-bottom: none; }
+  .items-table tbody tr:hover td { background: var(--orange-light); }
+
+  .qty-delivered { display: flex; align-items: center; gap: 6px; }
+  .qty-input {
+    width: 62px; padding: 4px 8px; border: 1.5px solid var(--gray);
+    border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; text-align: center; outline: none;
+  }
+  .qty-input:focus { border-color: var(--orange); }
+  .qty-total { color: var(--gray-dark); font-size: 12px; }
+  .item-bar { width: 70px; height: 5px; background: var(--gray); border-radius: 3px; display: inline-block; overflow: hidden; vertical-align: middle; margin-right: 5px; }
+  .item-bar-fill { height: 100%; border-radius: 3px; }
+  .item-pct { font-size: 12px; font-weight: 600; }
+
+  .add-item-btn {
+    background: none; border: 1.5px dashed var(--gray); border-radius: 6px;
+    padding: 5px 12px; font-size: 12px; color: var(--gray-dark);
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .add-item-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  .empty { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal {
+    background: white; border-radius: 14px; padding: 28px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+  .modal h2 span { color: var(--orange); }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray);
+    border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+  }
+  .form-group input:focus { border-color: var(--orange); }
+  .form-row { display: flex; gap: 12px; }
+  .form-row .form-group { flex: 1; }
+  .item-builder-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+  .item-builder-row .form-group { flex: 1; margin-bottom: 0; }
+  .item-builder-row .form-group.narrow { max-width: 80px; }
+  .remove-item-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--gray-dark); padding: 0 4px; line-height: 1; }
+  .remove-item-btn:hover { color: var(--red); }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray); }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1a1a1a; color: white; padding: 12px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 500; z-index: 999; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-box">
+      <svg viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 2L3 7v11h5v-5h4v5h5V7L10 2z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand">Comercial <span>Miglo</span></div>
+      <div class="subtitle">Seguimiento de Órdenes de Compra</div>
+    </div>
+  </div>
+  <div class="header-stats" id="headerStats"></div>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <button class="btn-primary" onclick="openNewModal()">＋ Nueva OC</button>
+    <input class="search-box" type="text" id="searchInput" placeholder="Buscar por N° OC o cliente…" oninput="renderOCs()">
+  </div>
+  <div class="filters">
+    <span class="pill active" onclick="setFilter('all',this)">Todas</span>
+    <span class="pill" onclick="setFilter('pendiente',this)">🔴 Pendiente</span>
+    <span class="pill" onclick="setFilter('parcial',this)">🟡 Parcial</span>
+    <span class="pill" onclick="setFilter('completa',this)">🟢 Completa</span>
+  </div>
+  <div class="oc-grid" id="ocGrid"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2><span>Nueva</span> Orden de Compra</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>N° de OC</label>
+        <input type="text" id="f_num" placeholder="OC-001">
+      </div>
+      <div class="form-group">
+        <label>Fecha de Emisión</label>
+        <input type="date" id="f_fecha">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Cliente</label>
+      <input type="text" id="f_cliente" placeholder="Nombre del cliente">
+    </div>
+    <div class="form-group">
+      <label>Ítems</label>
+      <div id="itemsBuilder"></div>
+      <button class="add-item-btn" onclick="addItemRow()" style="margin-top:8px">＋ Agregar ítem</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveOC()">Guardar OC</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'miglo_ocs_v3';
+let ocs = [];
+let activeFilter = 'all';
+let expanded = {};
+let tempItems = [];
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+function loadFromLS() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    ocs = raw ? JSON.parse(raw) : sampleData();
+  } catch(e) { ocs = sampleData(); }
+  render();
+}
+function saveToLS() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ocs)); } catch(e) {}
+}
+
+function sampleData() {
+  return [
+    {
+      id: uid(), num: 'OC-001', cliente: 'Hotel Intercontinental', fecha: '2026-06-01',
+      items: [
+        { id: uid(), nombre: 'Mandil Chef Premium', unidad: 'und', cantidad: 20, entregado: 20 },
+        { id: uid(), nombre: 'Gorro de Chef', unidad: 'und', cantidad: 30, entregado: 15 },
+        { id: uid(), nombre: 'Paño de cocina', unidad: 'pack', cantidad: 10, entregado: 0 },
+      ]
+    },
+    {
+      id: uid(), num: 'OC-002', cliente: 'Escuela Gastronomía INACAP', fecha: '2026-06-05',
+      items: [
+        { id: uid(), nombre: 'Bolso porta cuchillos', unidad: 'und', cantidad: 15, entregado: 15 },
+        { id: uid(), nombre: 'Mandil Estudiante', unidad: 'und', cantidad: 50, entregado: 50 },
+      ]
+    },
+    {
+      id: uid(), num: 'OC-003', cliente: 'Restaurante Osaka', fecha: '2026-06-10',
+      items: [
+        { id: uid(), nombre: 'Mandil Negro', unidad: 'und', cantidad: 8, entregado: 0 },
+        { id: uid(), nombre: 'Gorro tipo toque', unidad: 'und', cantidad: 8, entregado: 0 },
+      ]
+    }
+  ];
+}
+
+// ── COMPUTE ────────────────────────────────────────────────────────────────
+function getStatus(oc) {
+  const tot = oc.items.reduce((s,i) => s + i.cantidad, 0);
+  const del = oc.items.reduce((s,i) => s + Math.min(i.entregado, i.cantidad), 0);
+  if (del === 0) return 'pendiente';
+  if (del >= tot) return 'completa';
+  return 'parcial';
+}
+function getPct(oc) {
+  const tot = oc.items.reduce((s,i) => s + i.cantidad, 0);
+  if (!tot) return 0;
+  const del = oc.items.reduce((s,i) => s + Math.min(i.entregado, i.cantidad), 0);
+  return Math.round((del/tot)*100);
+}
+function pctColor(p) {
+  if (p === 0) return 'var(--red)';
+  if (p === 100) return 'var(--green)';
+  return 'var(--yellow)';
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+function setFilter(f, el) {
+  activeFilter = f;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderOCs();
+}
+function filtered() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  return ocs.filter(oc => {
+    const st = getStatus(oc);
+    return (activeFilter === 'all' || st === activeFilter) &&
+           (!q || oc.num.toLowerCase().includes(q) || oc.cliente.toLowerCase().includes(q));
+  });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function render() { renderStats(); renderOCs(); }
+
+function renderStats() {
+  const tot = ocs.length;
+  const pend = ocs.filter(o => getStatus(o)==='pendiente').length;
+  const parc = ocs.filter(o => getStatus(o)==='parcial').length;
+  const comp = ocs.filter(o => getStatus(o)==='completa').length;
+  document.getElementById('headerStats').innerHTML = `
+    <div class="hstat"><div class="hstat-val">${tot}</div><div class="hstat-lbl">Total OC</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:var(--yellow)">${parc}</div><div class="hstat-lbl">En curso</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:var(--red)">${pend}</div><div class="hstat-lbl">Pendiente</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:var(--green)">${comp}</div><div class="hstat-lbl">Completa</div></div>`;
+}
+
+function renderOCs() {
+  renderStats();
+  const list = filtered();
+  const grid = document.getElementById('ocGrid');
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><h3>Sin OC para mostrar</h3><p>Agrega una nueva OC o cambia los filtros.</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(oc => {
+    const st = getStatus(oc);
+    const pct = getPct(oc);
+    const open = !!expanded[oc.id];
+    const label = {pendiente:'Pendiente',parcial:'Parcial',completa:'Completa'}[st];
+
+    const rows = oc.items.map(item => {
+      const ip = item.cantidad > 0 ? Math.round((Math.min(item.entregado,item.cantidad)/item.cantidad)*100) : 0;
+      return `<tr>
+        <td>${item.nombre}</td>
+        <td style="color:var(--gray-dark)">${item.unidad}</td>
+        <td><div class="qty-delivered">
+          <input class="qty-input" type="number" min="0" max="${item.cantidad}" value="${item.entregado}"
+            onchange="updateDelivered('${oc.id}','${item.id}',this.value)">
+          <span class="qty-total">/ ${item.cantidad}</span>
+        </div></td>
+        <td>
+          <span class="item-bar"><span class="item-bar-fill" style="width:${ip}%;background:${pctColor(ip)}"></span></span>
+          <span class="item-pct" style="color:${pctColor(ip)}">${ip}%</span>
+        </td>
+        <td><button class="icon-btn" onclick="delItem('${oc.id}','${item.id}')">🗑</button></td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="oc-card ${st}">
+      <div class="oc-header" onclick="toggleExpand('${oc.id}')">
+        <div class="oc-num">${oc.num}</div>
+        <div class="oc-client">${oc.cliente}</div>
+        <div class="oc-date">${fmtDate(oc.fecha)}</div>
+        <div class="oc-progress-wrap">
+          <div class="oc-progress-bar"><div class="oc-progress-fill" style="width:${pct}%;background:${pctColor(pct)}"></div></div>
+          <span class="oc-pct" style="color:${pctColor(pct)}">${pct}%</span>
+        </div>
+        <span class="badge ${st}">${label}</span>
+        <button class="icon-btn" onclick="event.stopPropagation();delOC('${oc.id}')">🗑</button>
+        <span class="chevron ${open?'open':''}">▼</span>
+      </div>
+      <div class="oc-items ${open?'open':''}">
+        <table class="items-table">
+          <thead><tr><th>Producto</th><th>Unidad</th><th>Entregado</th><th>Avance</th><th></th></tr></thead>
+          <tbody>
+            ${rows}
+            <tr><td colspan="5"><button class="add-item-btn" onclick="promptAddItem('${oc.id}')">＋ Agregar ítem</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(id) { expanded[id] = !expanded[id]; renderOCs(); }
+function fmtDate(d) { if(!d) return '—'; const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; }
+
+// ── MUTATIONS ────────────────────────────────────────────────────────────
+function updateDelivered(ocId, itemId, val) {
+  const oc = ocs.find(o=>o.id===ocId);
+  if (!oc) return;
+  const item = oc.items.find(i=>i.id===itemId);
+  if (!item) return;
+  item.entregado = Math.max(0, Math.min(item.cantidad, parseInt(val)||0));
+  saveToLS(); renderOCs(); toast('✓ Entrega actualizada');
+}
+function delItem(ocId, itemId) {
+  const oc = ocs.find(o=>o.id===ocId);
+  if (!oc) return;
+  oc.items = oc.items.filter(i=>i.id!==itemId);
+  saveToLS(); renderOCs(); toast('Ítem eliminado');
+}
+function delOC(id) {
+  if (!confirm('¿Eliminar esta OC permanentemente?')) return;
+  ocs = ocs.filter(o=>o.id!==id);
+  delete expanded[id];
+  saveToLS(); render(); toast('OC eliminada');
+}
+function promptAddItem(ocId) {
+  const nombre = prompt('Nombre del producto:'); if (!nombre) return;
+  const cantStr = prompt('Cantidad:'); const cantidad = parseInt(cantStr); if (!cantidad||cantidad<1) return;
+  const unidad = prompt('Unidad (und, kg, pack…):', 'und') || 'und';
+  const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
+  oc.items.push({ id:uid(), nombre, unidad, cantidad, entregado:0 });
+  expanded[ocId] = true;
+  saveToLS(); renderOCs(); toast('✓ Ítem agregado');
+}
+
+// ── MODAL ────────────────────────────────────────────────────────────────
+function openNewModal() {
+  tempItems = [{ id:uid(), nombre:'', unidad:'und', cantidad:1 }];
+  document.getElementById('f_num').value = '';
+  document.getElementById('f_fecha').value = todayStr();
+  document.getElementById('f_cliente').value = '';
+  renderBuilder();
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.add('hidden'); }
+function closeModalOutside(e) { if (e.target.id==='modalOverlay') closeModal(); }
+
+function renderBuilder() {
+  document.getElementById('itemsBuilder').innerHTML = tempItems.map((it,idx) => `
+    <div class="item-builder-row">
+      <div class="form-group">
+        ${idx===0?'<label>Producto</label>':''}
+        <input type="text" placeholder="Nombre" value="${it.nombre}" oninput="tempItems[${idx}].nombre=this.value">
+      </div>
+      <div class="form-group narrow">
+        ${idx===0?'<label>Cantidad</label>':''}
+        <input type="number" min="1" value="${it.cantidad}" style="text-align:center" oninput="tempItems[${idx}].cantidad=parseInt(this.value)||1">
+      </div>
+      <div class="form-group narrow">
+        ${idx===0?'<label>Unidad</label>':''}
+        <input type="text" placeholder="und" value="${it.unidad}" oninput="tempItems[${idx}].unidad=this.value">
+      </div>
+      <button class="remove-item-btn" onclick="removeBuilderItem(${idx})" style="margin-top:${idx===0?'20':'0'}px">×</button>
+    </div>`).join('');
+}
+function addItemRow() { tempItems.push({id:uid(),nombre:'',unidad:'und',cantidad:1}); renderBuilder(); }
+function removeBuilderItem(idx) { if(tempItems.length>1){tempItems.splice(idx,1);renderBuilder();} }
+
+function saveOC() {
+  const num = document.getElementById('f_num').value.trim();
+  const cliente = document.getElementById('f_cliente').value.trim();
+  const fecha = document.getElementById('f_fecha').value;
+  if (!num||!cliente) { toast('⚠ Completa N° OC y cliente'); return; }
+  const items = tempItems.filter(i=>i.nombre.trim()).map(i=>({...i,entregado:0}));
+  if (!items.length) { toast('⚠ Agrega al menos un ítem'); return; }
+  ocs.unshift({id:uid(),num,cliente,fecha,items});
+  saveToLS(); closeModal(); render(); toast('✓ OC creada');
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2,10); }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+loadFromLS();
+</script>
+</body>
+</html>
