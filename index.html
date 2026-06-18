@@ -5,188 +5,227 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Miglo ERP – Seguimiento OC</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --orange: #FE5E19;
-    --orange-light: #fff0eb;
-    --gray: #DCDCDC;
-    --gray-dark: #6b7280;
-    --gray-mid: #f3f4f6;
-    --white: #ffffff;
-    --text: #1a1a1a;
-    --green: #16a34a; --green-bg: #dcfce7;
-    --yellow: #d97706; --yellow-bg: #fef3c7;
-    --red: #dc2626; --red-bg: #fee2e2;
-    --radius: 10px;
-    --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text); min-height: 100vh; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #FE5E19; --orange-light: #fff0eb;
+  --gray: #DCDCDC; --gray-dark: #6b7280; --gray-mid: #f3f4f6;
+  --white: #ffffff; --text: #1a1a1a;
+  --green: #16a34a; --green-bg: #dcfce7;
+  --yellow: #d97706; --yellow-bg: #fef3c7;
+  --red: #dc2626; --red-bg: #fee2e2;
+  --radius: 10px; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text); min-height: 100vh; }
 
-  .header {
-    background: var(--white); border-bottom: 3px solid var(--orange);
-    padding: 0 28px; display: flex; align-items: center; justify-content: space-between;
-    height: 60px; position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-  .logo-box { width: 36px; height: 36px; background: var(--orange); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
-  .logo-box svg { width: 20px; height: 20px; }
-  .brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-  .brand span { color: var(--orange); }
-  .subtitle { font-size: 11px; color: var(--gray-dark); }
-  .header-right { display: flex; align-items: center; gap: 20px; }
-  .header-stats { display: flex; gap: 22px; }
-  .hstat-val { font-size: 20px; font-weight: 700; color: var(--orange); line-height: 1; text-align: right; }
-  .hstat-lbl { font-size: 10px; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.5px; text-align: right; }
-  .sync-status { font-size: 11px; color: var(--gray-dark); display: flex; align-items: center; gap: 5px; }
-  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gray-dark); }
-  .sync-dot.ok { background: var(--green); }
-  .sync-dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
-  .sync-dot.err { background: var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* LOGIN SCREEN */
+#loginScreen {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #fff0eb 0%, #f7f7f7 100%);
+}
+.login-card {
+  background: white; border-radius: 18px; padding: 48px 40px; text-align: center;
+  box-shadow: 0 8px 40px rgba(254,94,25,0.12); max-width: 380px; width: 100%;
+}
+.login-logo { width: 56px; height: 56px; background: var(--orange); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.login-logo svg { width: 30px; height: 30px; }
+.login-brand { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.login-brand span { color: var(--orange); }
+.login-sub { font-size: 13px; color: var(--gray-dark); margin-bottom: 32px; }
+.login-divider { font-size: 12px; color: var(--gray-dark); margin-bottom: 20px; }
+.login-error { background: var(--red-bg); color: var(--red); padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-top: 16px; display: none; }
 
-  .main { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
-
-  .toolbar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
-  .btn-primary { background: var(--orange); color: white; border: none; padding: 9px 18px; border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-  .btn-primary:hover { opacity: 0.88; }
-  .btn-secondary { background: var(--white); color: var(--text); border: 1.5px solid var(--gray); padding: 8px 16px; border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
-  .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
-  .search-box { flex: 1; min-width: 180px; padding: 8px 14px; border: 1.5px solid var(--gray); border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
-  .search-box:focus { border-color: var(--orange); }
-
-  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-  .pill { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--gray); background: white; color: var(--gray-dark); }
-  .pill:hover { border-color: var(--orange); color: var(--orange); }
-  .pill.active { background: var(--orange); color: white; border-color: var(--orange); font-weight: 600; }
-  .pill.active:hover { opacity: 0.88; color: white; }
-
-  .oc-grid { display: flex; flex-direction: column; gap: 12px; }
-  .oc-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border-left: 4px solid var(--gray); overflow: visible; }
-  .oc-card.pendiente { border-left-color: var(--red); }
-  .oc-card.parcial { border-left-color: var(--yellow); }
-  .oc-card.completa { border-left-color: var(--green); }
-
-  .oc-header { padding: 14px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; }
-  .oc-header:hover { background: var(--orange-light); }
-  .oc-num { font-size: 14px; font-weight: 700; color: var(--orange); min-width: 80px; }
-  .oc-client { font-size: 14px; font-weight: 600; flex: 1; }
-  .oc-date { font-size: 12px; color: var(--gray-dark); min-width: 90px; }
-  .oc-progress-wrap { min-width: 130px; display: flex; align-items: center; gap: 8px; }
-  .oc-progress-bar { flex: 1; height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
-  .oc-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
-  .oc-pct { font-size: 12px; font-weight: 600; min-width: 34px; text-align: right; }
-  .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; min-width: 72px; text-align: center; }
-  .badge.pendiente { background: var(--red-bg); color: var(--red); }
-  .badge.parcial { background: var(--yellow-bg); color: var(--yellow); }
-  .badge.completa { background: var(--green-bg); color: var(--green); }
-  .chevron { color: var(--gray-dark); transition: transform 0.2s; font-size: 12px; }
-  .chevron.open { transform: rotate(180deg); }
-  .factura-btn { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 12px; color: var(--gray-dark); font-family: 'Inter', sans-serif; white-space: nowrap; }
-  .factura-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .factura-btn.has-file { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-  .upload-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--gray); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
-  /* DOCS DROPDOWN */
-  .docs-wrap { position: relative; }
-  .docs-btn { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--gray-dark); font-family: 'Inter', sans-serif; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
-  .docs-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .docs-btn.has-docs { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-  .docs-dropdown { position: absolute; right: 0; top: calc(100% + 4px); background: white; border: 1.5px solid var(--gray); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 220px; z-index: 200; overflow: hidden; }
-  .docs-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 12px; cursor: pointer; color: var(--text); border-bottom: 1px solid var(--gray-mid); }
-  .docs-dropdown-item:last-child { border-bottom: none; }
-  .docs-dropdown-item:hover { background: var(--orange-light); color: var(--orange); }
-  .docs-dropdown-item.add { color: var(--orange); font-weight: 600; }
-  .docs-dropdown-item .doc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .docs-dropdown-item .doc-del { color: var(--gray-dark); font-size: 14px; padding: 0 2px; }
-  .docs-dropdown-item .doc-del:hover { color: var(--red); }
-  .icon-btn { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 13px; }
-  .icon-btn:hover { border-color: var(--red); }
-
-  .oc-items { border-top: 1px solid var(--gray-mid); padding: 14px 18px 16px; display: none; }
-  .oc-items.open { display: block; }
-  .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .items-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-dark); font-weight: 600; padding: 6px 10px; border-bottom: 1.5px solid var(--gray); background: var(--gray-mid); }
-  .items-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-mid); vertical-align: middle; }
-  .items-table tr:last-child td { border-bottom: none; }
-  .items-table tbody tr:hover td { background: var(--orange-light); }
-  .qty-delivered { display: flex; align-items: center; gap: 6px; }
-  .qty-input { width: 62px; padding: 4px 8px; border: 1.5px solid var(--gray); border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; text-align: center; outline: none; }
-  .qty-input:focus { border-color: var(--orange); }
-  .qty-total { color: var(--gray-dark); font-size: 12px; }
-  .item-bar { width: 70px; height: 5px; background: var(--gray); border-radius: 3px; display: inline-block; overflow: hidden; vertical-align: middle; margin-right: 5px; }
-  .item-bar-fill { height: 100%; border-radius: 3px; }
-  .item-pct { font-size: 12px; font-weight: 600; }
-  .add-item-btn { background: none; border: 1.5px dashed var(--gray); border-radius: 6px; padding: 5px 12px; font-size: 12px; color: var(--gray-dark); cursor: pointer; font-family: 'Inter', sans-serif; }
-  .add-item-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .obs-input { width: 100%; padding: 5px 8px; border: 1.5px solid transparent; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text); background: transparent; resize: none; outline: none; min-height: 28px; }
-  .obs-input:hover { border-color: var(--gray); background: white; }
-  .obs-input:focus { border-color: var(--orange); background: white; }
-
-  /* LOADING */
-  .loading { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
-  .spinner { width: 32px; height: 32px; border: 3px solid var(--gray); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .empty { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; }
-  .empty h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
-
-  /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .modal { background: white; border-radius: 14px; padding: 28px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-  .modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
-  .modal h2 span { color: var(--orange); }
-  .form-group { margin-bottom: 14px; }
-  .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
-  .form-group input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; }
-  .form-group input:focus { border-color: var(--orange); }
-  .form-row { display: flex; gap: 12px; }
-  .form-row .form-group { flex: 1; }
-  .item-builder-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
-  .item-builder-row .form-group { flex: 1; margin-bottom: 0; }
-  .item-builder-row .form-group.narrow { max-width: 80px; }
-  .remove-item-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--gray-dark); padding: 0 4px; line-height: 1; }
-  .remove-item-btn:hover { color: var(--red); }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray); }
-
-  .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; color: white; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-  .toast.show { opacity: 1; }
-  .hidden { display: none !important; }
+/* APP */
+#appScreen { display: none; }
+.header {
+  background: var(--white); border-bottom: 3px solid var(--orange);
+  padding: 0 28px; display: flex; align-items: center; justify-content: space-between;
+  height: 60px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo-box { width: 36px; height: 36px; background: var(--orange); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+.logo-box svg { width: 20px; height: 20px; }
+.brand { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+.brand span { color: var(--orange); }
+.subtitle { font-size: 11px; color: var(--gray-dark); }
+.header-right { display: flex; align-items: center; gap: 20px; }
+.header-stats { display: flex; gap: 22px; }
+.hstat-val { font-size: 20px; font-weight: 700; color: var(--orange); line-height: 1; text-align: right; }
+.hstat-lbl { font-size: 10px; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.5px; text-align: right; }
+.sync-status { font-size: 11px; color: var(--gray-dark); display: flex; align-items: center; gap: 5px; }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gray-dark); }
+.sync-dot.ok { background: var(--green); }
+.sync-dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
+.sync-dot.err { background: var(--red); }
+.user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray-dark); }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--orange); }
+.btn-logout { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-family: 'Inter', sans-serif; cursor: pointer; color: var(--gray-dark); }
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.main { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+.toolbar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; flex-wrap: wrap; }
+.btn-primary { background: var(--orange); color: white; border: none; padding: 9px 18px; border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.btn-primary:hover { opacity: 0.88; }
+.btn-secondary { background: var(--white); color: var(--text); border: 1.5px solid var(--gray); padding: 8px 16px; border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
+.search-box { flex: 1; min-width: 180px; padding: 8px 14px; border: 1.5px solid var(--gray); border-radius: var(--radius); font-family: 'Inter', sans-serif; font-size: 13px; outline: none; }
+.search-box:focus { border-color: var(--orange); }
+.filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.pill { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--gray); background: white; color: var(--gray-dark); }
+.pill:hover { border-color: var(--orange); color: var(--orange); }
+.pill.active { background: var(--orange); color: white; border-color: var(--orange); font-weight: 600; }
+.pill.active:hover { opacity: 0.88; color: white; }
+.oc-grid { display: flex; flex-direction: column; gap: 12px; }
+.oc-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border-left: 4px solid var(--gray); overflow: visible; }
+.oc-card.pendiente { border-left-color: var(--red); }
+.oc-card.parcial { border-left-color: var(--yellow); }
+.oc-card.completa { border-left-color: var(--green); }
+.oc-header { padding: 14px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; }
+.oc-header:hover { background: var(--orange-light); }
+.oc-num { font-size: 14px; font-weight: 700; color: var(--orange); min-width: 80px; }
+.oc-client { font-size: 14px; font-weight: 600; flex: 1; }
+.oc-date { font-size: 12px; color: var(--gray-dark); min-width: 90px; }
+.oc-progress-wrap { min-width: 130px; display: flex; align-items: center; gap: 8px; }
+.oc-progress-bar { flex: 1; height: 6px; background: var(--gray); border-radius: 3px; overflow: hidden; }
+.oc-progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.oc-pct { font-size: 12px; font-weight: 600; min-width: 34px; text-align: right; }
+.badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; min-width: 72px; text-align: center; }
+.badge.pendiente { background: var(--red-bg); color: var(--red); }
+.badge.parcial { background: var(--yellow-bg); color: var(--yellow); }
+.badge.completa { background: var(--green-bg); color: var(--green); }
+.chevron { color: var(--gray-dark); transition: transform 0.2s; font-size: 12px; }
+.chevron.open { transform: rotate(180deg); }
+.docs-wrap { position: relative; }
+.docs-btn { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--gray-dark); font-family: 'Inter', sans-serif; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.docs-btn:hover { border-color: var(--orange); color: var(--orange); }
+.docs-btn.has-docs { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+.docs-dropdown { position: absolute; right: 0; top: calc(100% + 4px); background: white; border: 1.5px solid var(--gray); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 220px; z-index: 200; overflow: hidden; }
+.docs-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 12px; cursor: pointer; color: var(--text); border-bottom: 1px solid var(--gray-mid); }
+.docs-dropdown-item:last-child { border-bottom: none; }
+.docs-dropdown-item:hover { background: var(--orange-light); color: var(--orange); }
+.docs-dropdown-item.add { color: var(--orange); font-weight: 600; }
+.docs-dropdown-item .doc-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docs-dropdown-item .doc-del { color: var(--gray-dark); font-size: 14px; padding: 0 2px; }
+.docs-dropdown-item .doc-del:hover { color: var(--red); }
+.icon-btn { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 13px; }
+.icon-btn:hover { border-color: var(--red); }
+.oc-items { border-top: 1px solid var(--gray-mid); padding: 14px 18px 16px; display: none; }
+.oc-items.open { display: block; }
+.items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.items-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-dark); font-weight: 600; padding: 6px 10px; border-bottom: 1.5px solid var(--gray); background: var(--gray-mid); }
+.items-table td { padding: 8px 10px; border-bottom: 1px solid var(--gray-mid); vertical-align: middle; }
+.items-table tr:last-child td { border-bottom: none; }
+.items-table tbody tr:hover td { background: var(--orange-light); }
+.qty-delivered { display: flex; align-items: center; gap: 6px; }
+.qty-input { width: 62px; padding: 4px 8px; border: 1.5px solid var(--gray); border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; text-align: center; outline: none; }
+.qty-input:focus { border-color: var(--orange); }
+.qty-total { color: var(--gray-dark); font-size: 12px; }
+.item-bar { width: 70px; height: 5px; background: var(--gray); border-radius: 3px; display: inline-block; overflow: hidden; vertical-align: middle; margin-right: 5px; }
+.item-bar-fill { height: 100%; border-radius: 3px; }
+.item-pct { font-size: 12px; font-weight: 600; }
+.add-item-btn { background: none; border: 1.5px dashed var(--gray); border-radius: 6px; padding: 5px 12px; font-size: 12px; color: var(--gray-dark); cursor: pointer; font-family: 'Inter', sans-serif; }
+.add-item-btn:hover { border-color: var(--orange); color: var(--orange); }
+.obs-input { width: 100%; padding: 5px 8px; border: 1.5px solid transparent; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; color: var(--text); background: transparent; resize: none; outline: none; min-height: 28px; }
+.obs-input:hover { border-color: var(--gray); background: white; }
+.obs-input:focus { border-color: var(--orange); background: white; }
+.loading { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
+.spinner { width: 32px; height: 32px; border: 3px solid var(--gray); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 60px 20px; color: var(--gray-dark); }
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: white; border-radius: 14px; padding: 28px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 20px; }
+.modal h2 span { color: var(--orange); }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-dark); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
+.form-group input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 14px; outline: none; }
+.form-group input:focus { border-color: var(--orange); }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+.item-builder-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+.item-builder-row .form-group { flex: 1; margin-bottom: 0; }
+.item-builder-row .form-group.narrow { max-width: 80px; }
+.remove-item-btn { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--gray-dark); padding: 0 4px; line-height: 1; }
+.remove-item-btn:hover { color: var(--red); }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray); }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a1a; color: white; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <div class="logo-box">
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
       <svg viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M10 2L3 7v11h5v-5h4v5h5V7L10 2z"/></svg>
     </div>
-    <div>
-      <div class="brand">Comercial <span>Miglo</span></div>
-      <div class="subtitle">Seguimiento de Órdenes de Compra</div>
+    <div class="login-brand">Comercial <span>Miglo</span></div>
+    <div class="login-sub">Seguimiento de Órdenes de Compra</div>
+    <div class="login-divider">Inicia sesión con tu cuenta Prime Chef</div>
+    <div id="g_id_onload"
+      data-client_id="1053887417861-1i2ce27vkhpj633pvrj3gphb6mcugl45.apps.googleusercontent.com"
+      data-callback="handleCredentialResponse"
+      data-auto_prompt="false">
     </div>
-  </div>
-  <div class="header-right">
-    <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">Conectando…</span></div>
-    <div class="header-stats" id="headerStats"></div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="signin_with"
+      data-shape="rectangular"
+      data-logo_alignment="left"
+      data-width="300">
+    </div>
+    <div class="login-error" id="loginError">
+      ⛔ Acceso denegado. Solo cuentas @primechef.cl pueden ingresar.
+    </div>
   </div>
 </div>
 
-<div class="main">
-  <div class="toolbar">
-    <button class="btn-primary" onclick="openNewModal()">＋ Nueva OC</button>
-    <button class="btn-secondary" onclick="loadData()">↻ Actualizar</button>
-    <input class="search-box" type="text" id="searchInput" placeholder="Buscar por N° OC o cliente…" oninput="renderOCs()">
+<!-- APP SCREEN -->
+<div id="appScreen">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-box">
+        <svg viewBox="0 0 20 20" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M10 2L3 7v11h5v-5h4v5h5V7L10 2z"/></svg>
+      </div>
+      <div>
+        <div class="brand">Comercial <span>Miglo</span></div>
+        <div class="subtitle">Seguimiento de Órdenes de Compra</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="sync-status"><span class="sync-dot" id="syncDot"></span><span id="syncLabel">Conectando…</span></div>
+      <div class="header-stats" id="headerStats"></div>
+      <div class="user-info">
+        <img class="user-avatar" id="userAvatar" src="" alt="">
+        <span id="userName"></span>
+        <button class="btn-logout" onclick="logout()">Salir</button>
+      </div>
+    </div>
   </div>
-  <div class="filters">
-    <span class="pill active" onclick="toggleFilter('pendiente',this)">🔴 Pendiente</span>
-    <span class="pill active" onclick="toggleFilter('parcial',this)">🟡 Parcial</span>
-    <span class="pill active" onclick="toggleFilter('completa',this)">🟢 Completa</span>
-  </div>
-  <div class="oc-grid" id="ocGrid">
-    <div class="loading"><div class="spinner"></div><p>Cargando desde Google Sheets…</p></div>
+
+  <div class="main">
+    <div class="toolbar">
+      <button class="btn-primary" onclick="openNewModal()">＋ Nueva OC</button>
+      <button class="btn-secondary" onclick="loadData()">↻ Actualizar</button>
+      <input class="search-box" type="text" id="searchInput" placeholder="Buscar por N° OC o cliente…" oninput="renderOCs()">
+    </div>
+    <div class="filters">
+      <span class="pill active" onclick="toggleFilter('pendiente',this)">🔴 Pendiente</span>
+      <span class="pill active" onclick="toggleFilter('parcial',this)">🟡 Parcial</span>
+      <span class="pill active" onclick="toggleFilter('completa',this)">🟢 Completa</span>
+    </div>
+    <div class="oc-grid" id="ocGrid">
+      <div class="loading"><div class="spinner"></div><p>Cargando desde Google Sheets…</p></div>
+    </div>
   </div>
 </div>
 
@@ -215,28 +254,52 @@
 
 <script>
 const API = 'https://script.google.com/a/macros/primechef.cl/s/AKfycbw3TgY9fSmffqIeuhNgRkcQ-kMdqb2NbpLYlm3aC3fOoqKsRn23Mlh-dQ-4Hp8XBahk4Q/exec';
+const ALLOWED_DOMAIN = 'primechef.cl';
 
-let ocs = [];
-let expanded = {};
-let tempItems = [];
-let saving = false;
+let ocs = [], expanded = {}, tempItems = [], saving = false;
 
-// ── SYNC STATUS ────────────────────────────────────────────────────────────
-function setSyncStatus(state, label) {
-  const dot = document.getElementById('syncDot');
-  const lbl = document.getElementById('syncLabel');
-  dot.className = 'sync-dot ' + state;
-  lbl.textContent = label;
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function handleCredentialResponse(response) {
+  const payload = parseJwt(response.credential);
+  const email = payload.email || '';
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  // Mostrar app
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+  document.getElementById('userAvatar').src = payload.picture || '';
+  document.getElementById('userName').textContent = payload.name || email;
+  loadData();
 }
 
-// ── API ────────────────────────────────────────────────────────────────────
+function parseJwt(token) {
+  const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+  return JSON.parse(atob(base64));
+}
+
+function logout() {
+  google.accounts.id.disableAutoSelect();
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginError').style.display = 'none';
+  ocs = []; expanded = {};
+}
+
+// ── SYNC STATUS ──────────────────────────────────────────────────────────
+function setSyncStatus(state, label) {
+  document.getElementById('syncDot').className = 'sync-dot ' + state;
+  document.getElementById('syncLabel').textContent = label;
+}
+
+// ── API ──────────────────────────────────────────────────────────────────
 async function loadData() {
   setSyncStatus('syncing', 'Cargando…');
   try {
     const res = await fetch(API, { redirect: 'follow' });
     const data = await res.json();
     ocs = Array.isArray(data) ? data : [];
-    // Migrar facturaUrl antiguo a docs[]
     ocs.forEach(oc => {
       if (oc.facturaUrl && (!oc.docs || !oc.docs.length)) {
         oc.docs = [{ name: oc.facturaName || 'Factura', url: oc.facturaUrl, id: '' }];
@@ -256,8 +319,7 @@ async function saveAll() {
   setSyncStatus('syncing', 'Guardando…');
   try {
     await fetch(API, {
-      method: 'POST',
-      redirect: 'follow',
+      method: 'POST', redirect: 'follow',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'save_all', ocs })
     });
@@ -269,7 +331,7 @@ async function saveAll() {
   saving = false;
 }
 
-// ── COMPUTE ────────────────────────────────────────────────────────────────
+// ── COMPUTE ──────────────────────────────────────────────────────────────
 function getStatus(oc) {
   const tot = oc.items.reduce((s,i) => s + i.cantidad, 0);
   const del = oc.items.reduce((s,i) => s + Math.min(i.entregado, i.cantidad), 0);
@@ -290,15 +352,12 @@ function pctColor(p) {
 }
 
 let activeFilters = new Set(['pendiente','parcial','completa']);
-
 function toggleFilter(f, el) {
   if (activeFilters.has(f)) {
     if (activeFilters.size === 1) return;
-    activeFilters.delete(f);
-    el.classList.remove('active');
+    activeFilters.delete(f); el.classList.remove('active');
   } else {
-    activeFilters.add(f);
-    el.classList.add('active');
+    activeFilters.add(f); el.classList.add('active');
   }
   renderOCs();
 }
@@ -306,14 +365,12 @@ function filtered() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   return ocs.filter(oc => {
     const st = getStatus(oc);
-    return activeFilters.has(st) &&
-           (!q || oc.num.toLowerCase().includes(q) || oc.cliente.toLowerCase().includes(q));
+    return activeFilters.has(st) && (!q || oc.num.toLowerCase().includes(q) || oc.cliente.toLowerCase().includes(q));
   });
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────
 function render() { renderStats(); renderOCs(); }
-
 function renderStats() {
   const pend = ocs.filter(o => getStatus(o)==='pendiente').length;
   const parc = ocs.filter(o => getStatus(o)==='parcial').length;
@@ -324,7 +381,6 @@ function renderStats() {
     <div class="hstat"><div class="hstat-val" style="color:var(--red)">${pend}</div><div class="hstat-lbl">Pendiente</div></div>
     <div class="hstat"><div class="hstat-val" style="color:var(--green)">${comp}</div><div class="hstat-lbl">Completa</div></div>`;
 }
-
 function renderOCs() {
   renderStats();
   const list = filtered();
@@ -334,9 +390,7 @@ function renderOCs() {
     return;
   }
   grid.innerHTML = list.map(oc => {
-    const st = getStatus(oc);
-    const pct = getPct(oc);
-    const open = !!expanded[oc.id];
+    const st = getStatus(oc); const pct = getPct(oc); const open = !!expanded[oc.id];
     const label = {pendiente:'Pendiente',parcial:'Parcial',completa:'Completa'}[st];
     const rows = oc.items.map(item => {
       const ip = item.cantidad > 0 ? Math.round((Math.min(item.entregado,item.cantidad)/item.cantidad)*100) : 0;
@@ -367,18 +421,16 @@ function renderOCs() {
         <span class="badge ${st}">${label}</span>
         <div class="docs-wrap">
           <button class="docs-btn ${oc.docs&&oc.docs.length?'has-docs':''}" onclick="event.stopPropagation();toggleDocsMenu('${oc.id}')">
-            📁 Documentos ${oc.docs&&oc.docs.length?`(${oc.docs.length})`:''}  ▾
+            📁 Documentos ${oc.docs&&oc.docs.length?`(${oc.docs.length})`:''} ▾
           </button>
           <div class="docs-dropdown hidden" data-docs-id="${oc.id}" onclick="event.stopPropagation()">
             ${(oc.docs||[]).map((d,i)=>`
-              <div class="docs-dropdown-item">
-                <span>📄</span>
-                <span class="doc-name" onclick="window.open('${d.url}','_blank')" title="${d.name}">${d.name}</span>
-                <span class="doc-del" onclick="delDoc('${oc.id}',${i})" title="Eliminar">🗑</span>
-              </div>`).join('')}
-            <div class="docs-dropdown-item add" onclick="triggerUpload('${oc.id}')">
-              ＋ Agregar documento
-            </div>
+            <div class="docs-dropdown-item">
+              <span>📄</span>
+              <span class="doc-name" onclick="window.open('${d.url}','_blank')" title="${d.name}">${d.name}</span>
+              <span class="doc-del" onclick="delDoc('${oc.id}',${i})" title="Eliminar">🗑</span>
+            </div>`).join('')}
+            <div class="docs-dropdown-item add" onclick="triggerUpload('${oc.id}')">＋ Agregar documento</div>
           </div>
           <input type="file" id="file-${oc.id}" accept="image/*,.pdf" style="display:none" onchange="uploadDoc('${oc.id}',this)">
         </div>
@@ -405,16 +457,12 @@ function updateDelivered(ocId, itemId, val) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   const item = oc.items.find(i=>i.id===itemId); if (!item) return;
   item.entregado = Math.max(0, Math.min(item.cantidad, parseInt(val)||0));
-  renderOCs();
-  saveAll();
-  toast('✓ Entrega actualizada');
+  renderOCs(); saveAll(); toast('✓ Entrega actualizada');
 }
 function updateObs(ocId, itemId, val) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   const item = oc.items.find(i=>i.id===itemId); if (!item) return;
-  item.obs = val.trim();
-  saveAll();
-  toast('✓ Observación guardada');
+  item.obs = val.trim(); saveAll(); toast('✓ Observación guardada');
 }
 function delItem(ocId, itemId) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
@@ -429,20 +477,12 @@ function toggleDocsMenu(ocId) {
   if (isHidden) btn.classList.remove('hidden');
 }
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.docs-wrap')) {
-    document.querySelectorAll('.docs-dropdown').forEach(m => m.classList.add('hidden'));
-  }
+  if (!e.target.closest('.docs-wrap')) document.querySelectorAll('.docs-dropdown').forEach(m => m.classList.add('hidden'));
 });
-function triggerUpload(ocId) {
-  closeDocsMenus();
-  document.getElementById('file-'+ocId).click();
-}
-function closeDocsMenus() {
-  document.querySelectorAll('.docs-dropdown').forEach(m => m.classList.add('hidden'));
-}
+function triggerUpload(ocId) { closeDocsMenus(); document.getElementById('file-'+ocId).click(); }
+function closeDocsMenus() { document.querySelectorAll('.docs-dropdown').forEach(m => m.classList.add('hidden')); }
 async function uploadDoc(ocId, input) {
-  const file = input.files[0];
-  if (!file) return;
+  const file = input.files[0]; if (!file) return;
   if (file.size > 5 * 1024 * 1024) { toast('⚠ El archivo no debe superar 5MB'); return; }
   toast('⏳ Subiendo documento…');
   const reader = new FileReader();
@@ -457,10 +497,7 @@ async function uploadDoc(ocId, input) {
       const data = await res.json();
       if (data.ok) {
         const oc = ocs.find(o=>o.id===ocId);
-        if (oc) {
-          if (!oc.docs) oc.docs = [];
-          oc.docs.push({ name: file.name, url: data.url, id: data.id });
-        }
+        if (oc) { if (!oc.docs) oc.docs = []; oc.docs.push({ name: file.name, url: data.url, id: data.id }); }
         saveAll(); renderOCs(); toast('✓ Documento adjuntado');
       } else { toast('⚠ Error al subir archivo'); }
     } catch(err) { toast('⚠ Error de conexión'); }
@@ -470,13 +507,11 @@ async function uploadDoc(ocId, input) {
 }
 function delDoc(ocId, idx) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc||!oc.docs) return;
-  oc.docs.splice(idx, 1);
-  saveAll(); renderOCs(); toast('Documento eliminado');
+  oc.docs.splice(idx, 1); saveAll(); renderOCs(); toast('Documento eliminado');
 }
 function delOC(id) {
   if (!confirm('¿Eliminar esta OC permanentemente?')) return;
-  ocs = ocs.filter(o=>o.id!==id);
-  delete expanded[id];
+  ocs = ocs.filter(o=>o.id!==id); delete expanded[id];
   saveAll(); render(); toast('OC eliminada');
 }
 function promptAddItem(ocId) {
@@ -485,8 +520,7 @@ function promptAddItem(ocId) {
   const unidad = prompt('Unidad (und, kg, pack…):', 'und') || 'und';
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   oc.items.push({ id:uid(), nombre, unidad, cantidad, entregado:0 });
-  expanded[ocId] = true;
-  saveAll(); renderOCs(); toast('✓ Ítem agregado');
+  expanded[ocId] = true; saveAll(); renderOCs(); toast('✓ Ítem agregado');
 }
 
 // ── MODAL ────────────────────────────────────────────────────────────────
@@ -534,9 +568,7 @@ function toast(msg) {
   setTimeout(()=>el.classList.remove('show'), 2200);
 }
 
-// Auto-refresh cada 30 segundos
-loadData();
-setInterval(loadData, 30000);
+setInterval(() => { if (document.getElementById('appScreen').style.display !== 'none') loadData(); }, 30000);
 </script>
 </body>
 </html>
