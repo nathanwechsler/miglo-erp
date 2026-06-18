@@ -61,7 +61,8 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text)
 .sync-dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
 .sync-dot.err { background: var(--red); }
 .user-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray-dark); }
-.user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--orange); }
+.user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--orange); display:none; }
+.user-initials { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--orange); background: var(--orange); color: white; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .btn-logout { background: none; border: 1.5px solid var(--gray); border-radius: 6px; padding: 4px 10px; font-size: 11px; font-family: 'Inter', sans-serif; cursor: pointer; color: var(--gray-dark); }
 .btn-logout:hover { border-color: var(--red); color: var(--red); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -206,6 +207,7 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text)
       <div class="header-stats" id="headerStats"></div>
       <div class="user-info">
         <img class="user-avatar" id="userAvatar" src="" alt="">
+<div class="user-initials" id="userInitials"></div>
         <span id="userName"></span>
         <button class="btn-logout" onclick="logout()">Salir</button>
       </div>
@@ -269,8 +271,26 @@ function handleCredentialResponse(response) {
   // Mostrar app
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appScreen').style.display = 'block';
-  document.getElementById('userAvatar').src = payload.picture || '';
-  document.getElementById('userName').textContent = payload.name || email;
+const avatar = document.getElementById('userAvatar');
+const initials = document.getElementById('userInitials');
+const name = payload.name || email;
+document.getElementById('userName').textContent = name;
+if (payload.picture) {
+  avatar.src = payload.picture;
+  avatar.style.display = 'block';
+  initials.style.display = 'none';
+  avatar.onerror = function() {
+    avatar.style.display = 'none';
+    initials.style.display = 'flex';
+  };
+} else {
+  avatar.style.display = 'none';
+  initials.style.display = 'flex';
+}
+const parts = name.trim().split(' ');
+initials.textContent = parts.length >= 2
+  ? parts[0][0].toUpperCase() + parts[1][0].toUpperCase()
+  : parts[0][0].toUpperCase();
   loadData();
 }
 
