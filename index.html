@@ -333,9 +333,37 @@ async function loadData() {
   }
 }
 
+async function saveOC(oc) {
+  setSyncStatus('syncing', 'Guardando…');
+  try {
+    await fetch(API, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'save_oc', oc })
+    });
+    setSyncStatus('ok', 'Guardado ✓');
+  } catch(e) {
+    setSyncStatus('err', 'Error al guardar');
+    toast('⚠ No se pudo guardar en Sheets');
+  }
+}
+
+async function deleteOC(id) {
+  setSyncStatus('syncing', 'Eliminando…');
+  try {
+    await fetch(API, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'delete_oc', id })
+    });
+    setSyncStatus('ok', 'Eliminado ✓');
+  } catch(e) {
+    setSyncStatus('err', 'Error al eliminar');
+    toast('⚠ No se pudo eliminar');
+  }
+}
+
 async function saveAll() {
-  if (saving) return;
-  saving = true;
   setSyncStatus('syncing', 'Guardando…');
   try {
     await fetch(API, {
@@ -348,7 +376,6 @@ async function saveAll() {
     setSyncStatus('err', 'Error al guardar');
     toast('⚠ No se pudo guardar en Sheets');
   }
-  saving = false;
 }
 
 // ── COMPUTE ──────────────────────────────────────────────────────────────
@@ -477,17 +504,16 @@ function updateDelivered(ocId, itemId, val) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   const item = oc.items.find(i=>i.id===itemId); if (!item) return;
   item.entregado = Math.max(0, Math.min(item.cantidad, parseInt(val)||0));
-  renderOCs(); saveAll(); toast('✓ Entrega actualizada');
+  saveOC(oc); renderOCs(); toast('✓ Entrega actualizada');
 }
 function updateObs(ocId, itemId, val) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   const item = oc.items.find(i=>i.id===itemId); if (!item) return;
-  item.obs = val.trim(); saveAll(); toast('✓ Observación guardada');
+  item.obs = val.trim(); saveOC(oc); toast('✓ Observación guardada');
 }
 function delItem(ocId, itemId) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
-  oc.items = oc.items.filter(i=>i.id!==itemId);
-  saveAll(); renderOCs(); toast('Ítem eliminado');
+oc.items = oc.items.filter(i=>i.id!==itemId); saveOC(oc); renderOCs(); toast('Ítem eliminado');
 }
 function toggleDocsMenu(ocId) {
   const btn = document.querySelector(`[data-docs-id="${ocId}"]`);
@@ -518,7 +544,7 @@ async function uploadDoc(ocId, input) {
       if (data.ok) {
         const oc = ocs.find(o=>o.id===ocId);
         if (oc) { if (!oc.docs) oc.docs = []; oc.docs.push({ name: file.name, url: data.url, id: data.id }); }
-        saveAll(); renderOCs(); toast('✓ Documento adjuntado');
+        saveOC(oc); renderOCs(); toast('✓ Documento adjuntado');
       } else { toast('⚠ Error al subir archivo'); }
     } catch(err) { toast('⚠ Error de conexión'); }
     input.value = '';
@@ -527,20 +553,19 @@ async function uploadDoc(ocId, input) {
 }
 function delDoc(ocId, idx) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc||!oc.docs) return;
-  oc.docs.splice(idx, 1); saveAll(); renderOCs(); toast('Documento eliminado');
+  oc.docs.splice(idx, 1); saveOC(oc); renderOCs(); toast('Documento eliminado');
+
 }
 function delOC(id) {
   if (!confirm('¿Eliminar esta OC permanentemente?')) return;
-  ocs = ocs.filter(o=>o.id!==id); delete expanded[id];
-  saveAll(); render(); toast('OC eliminada');
+ocs = ocs.filter(o=>o.id!==id); delete expanded[id]; deleteOC(id); render(); toast('OC eliminada');
 }
 function promptAddItem(ocId) {
   const nombre = prompt('Nombre del producto:'); if (!nombre) return;
   const cantStr = prompt('Cantidad:'); const cantidad = parseInt(cantStr); if (!cantidad||cantidad<1) return;
   const unidad = prompt('Unidad (und, kg, pack…):', 'und') || 'und';
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
-  oc.items.push({ id:uid(), nombre, unidad, cantidad, entregado:0 });
-  expanded[ocId] = true; saveAll(); renderOCs(); toast('✓ Ítem agregado');
+oc.items.push({ id:uid(), nombre, unidad, cantidad, entregado:0 }); expanded[ocId] = true; saveOC(oc); renderOCs(); toast('✓ Ítem agregado');
 }
 
 // ── MODAL ────────────────────────────────────────────────────────────────
@@ -575,8 +600,8 @@ function saveOC() {
   if (!num||!cliente) { toast('⚠ Completa N° OC y cliente'); return; }
   const items = tempItems.filter(i=>i.nombre.trim()).map(i=>({...i,entregado:0}));
   if (!items.length) { toast('⚠ Agrega al menos un ítem'); return; }
-  ocs.unshift({id:uid(),num,cliente,fecha,items});
-  saveAll(); closeModal(); render(); toast('✓ OC creada');
+const newOC = {id:uid(),num,cliente,fecha,items}; ocs.unshift(newOC); saveOC(newOC); closeModal(); render(); toast('✓ OC creada');
+
 }
 
 // ── UTILS ────────────────────────────────────────────────────────────────
