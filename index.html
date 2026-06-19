@@ -247,7 +247,7 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text)
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" onclick="saveOC()">Guardar OC</button>
+      <button class="btn-primary" onclick="saveNewOC()">Guardar OC</button>
     </div>
   </div>
 </div>
@@ -593,7 +593,7 @@ function renderBuilder() {
 }
 function addItemRow() { tempItems.push({id:uid(),nombre:'',unidad:'und',cantidad:1}); renderBuilder(); }
 function removeBuilderItem(idx) { if(tempItems.length>1){tempItems.splice(idx,1);renderBuilder();} }
-function saveOC() {
+function saveNewOC() {
   const num = document.getElementById('f_num').value.trim();
   const cliente = document.getElementById('f_cliente').value.trim();
   const fecha = document.getElementById('f_fecha').value;
@@ -601,7 +601,6 @@ function saveOC() {
   const items = tempItems.filter(i=>i.nombre.trim()).map(i=>({...i,entregado:0}));
   if (!items.length) { toast('⚠ Agrega al menos un ítem'); return; }
 const newOC = {id:uid(),num,cliente,fecha,items}; ocs.unshift(newOC); saveOC(newOC); closeModal(); render(); toast('✓ OC creada');
-
 }
 
 // ── UTILS ────────────────────────────────────────────────────────────────
