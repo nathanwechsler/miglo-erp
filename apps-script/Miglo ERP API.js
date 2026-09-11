@@ -108,6 +108,7 @@ function doPost(e) {
   return jsonResponse({ ok: false });
 }
 
+// Backend conectado vía clasp - verificación
 function jsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
