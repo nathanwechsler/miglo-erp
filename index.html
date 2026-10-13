@@ -86,7 +86,14 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text)
 .oc-card.completa { border-left-color: var(--green); }
 .oc-header { padding: 14px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; user-select: none; }
 .oc-header:hover { background: var(--orange-light); }
-.oc-num { font-size: 14px; font-weight: 700; color: var(--orange); width: 120px; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-num { font-size: 14px; font-weight: 700; color: var(--orange); width: 120px; min-width: 120px; display: flex; align-items: center; gap: 5px; cursor: text; }
+.oc-num-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.oc-num-edit { flex: none; font-size: 12px; font-weight: 400; color: var(--gray-dark); opacity: 0.45; transition: opacity 0.15s; }
+.oc-num:hover .oc-num-edit { opacity: 1; color: var(--orange); }
+.oc-num.editing { width: auto; }
+.oc-num-input { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; color: var(--orange); background: var(--white); border: 1.5px solid var(--gray); border-radius: 6px; padding: 3px 7px; min-width: 120px; max-width: 60vw; box-sizing: border-box; outline: none; user-select: text; }
+.oc-num-input:focus { border-color: #FE5E19; }
+@media (max-width: 640px) { .oc-num-input { font-size: 16px; } }
 .oc-client { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oc-date { font-size: 12px; color: var(--gray-dark); width: 90px; min-width: 90px; text-align: center; }
 .oc-progress-wrap { width: 140px; min-width: 140px; display: flex; align-items: center; gap: 8px; }
@@ -641,7 +648,7 @@ function renderOCs() {
     }).join('');
     return `<div class="oc-card ${st}">
       <div class="oc-header" onclick="toggleExpand('${oc.id}')">
-        <div class="oc-num">${oc.num}</div><div class="oc-client" title="${oc.cliente}">${oc.cliente}</div><div class="oc-date">${fmtDate(oc.fecha)}</div>
+        <div class="oc-num" title="Editar N° de OC" onclick="event.stopPropagation();editOCNum('${oc.id}',this)"><span class="oc-num-txt">${goEsc(oc.num)}</span><span class="oc-num-edit">✎</span></div><div class="oc-client" title="${oc.cliente}">${oc.cliente}</div><div class="oc-date">${fmtDate(oc.fecha)}</div>
         <div class="oc-progress-wrap"><div class="oc-progress-bar"><div class="oc-progress-fill" style="width:${pct}%;background:${pctColor(pct)}"></div></div><span class="oc-pct" style="color:${pctColor(pct)}">${pct}%</span></div>
         <div class="oc-checks" onclick="event.stopPropagation()">
           <label class="oc-check ${oc.facturado?'checked':''}">
@@ -780,6 +787,28 @@ function toggleOCCheck(ocId, field, val) {
   oc[field] = val; saveOC(oc); renderOCs(); toast(val ? '✓ Marcado' : 'Desmarcado');
 }
 function toggleExpand(id) { expanded[id] = !expanded[id]; renderOCs(); }
+function editOCNum(ocId, el) {
+  const oc = ocs.find(o=>o.id===ocId); if (!oc || el.classList.contains('editing')) return;
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.className = 'oc-num-input'; inp.value = oc.num == null ? '' : String(oc.num);
+  const fit = () => { inp.style.width = `calc(${inp.value.length + 2}ch + 16px)`; };
+  let done = false;
+  const finish = save => { if (done) return; done = true; if (save) commitOCNum(oc, inp.value); else renderOCs(); };
+  inp.addEventListener('input', fit);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  inp.addEventListener('blur', () => finish(true));
+  el.classList.add('editing'); el.replaceChildren(inp); fit(); inp.focus(); inp.select();
+}
+function commitOCNum(oc, val) {
+  const num = val.trim();
+  if (!num) { renderOCs(); toast('⚠ El N° de OC no puede quedar vacío'); return; }
+  if (num === String(oc.num)) { renderOCs(); return; }
+  if (ocs.some(o => o.id !== oc.id && String(o.num||'').trim().toLowerCase() === num.toLowerCase())) { renderOCs(); toast('⚠ Ya existe otra OC con el N° ' + num); return; }
+  oc.num = num; saveOC(oc); renderOCs(); toast('✓ N° de OC actualizado');
+}
 function updateDelivered(ocId, itemId, val) {
   const oc = ocs.find(o=>o.id===ocId); if (!oc) return;
   const item = oc.items.find(i=>i.id===itemId); if (!item) return;
