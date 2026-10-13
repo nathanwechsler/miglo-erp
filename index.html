@@ -338,8 +338,24 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: var(--text)
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://script.google.com/a/macros/primechef.cl/s/AKfycbw3TgY9fSmffqIeuhNgRkcQ-kMdqb2NbpLYlm3aC3fOoqKsRn23Mlh-dQ-4Hp8XBahk4Q/exec';
+const API = 'https://script.google.com/macros/s/AKfycbw3TgY9fSmffqIeuhNgRkcQ-kMdqb2NbpLYlm3aC3fOoqKsRn23Mlh-dQ-4Hp8XBahk4Q/exec';
 const ALLOWED_DOMAIN = 'primechef.cl';
+
+// Interpreta la respuesta del Apps Script. Si el body no es JSON (típico
+// cuando Google intercepta el pedido con su propia página de error antes de
+// que corra el código, p.ej. por reautorización pendiente) o si el backend
+// respondió {error:true, message}, lanza un Error con mensaje accionable
+// para que el catch() de cada acción lo muestre directo al usuario.
+async function parseApiResponse(res) {
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw new Error('El Apps Script necesita reautorización — avisa a Nathan');
+  }
+  if (data && data.error) throw new Error(data.message || 'Error del Apps Script');
+  return data;
+}
 
 let ocs = [], expanded = {}, tempItems = [];
 let gds = [], gdExpanded = {}, gdTempItems = [];
@@ -405,7 +421,7 @@ async function loadData() {
   setSyncStatus('syncing', 'Cargando…');
   try {
     const res = await fetch(API, { redirect: 'follow' });
-    const data = await res.json();
+    const data = await parseApiResponse(res);
     ocs = Array.isArray(data) ? data : [];
     ocs.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
     ocs.forEach(oc => {
@@ -417,22 +433,24 @@ async function loadData() {
     render();
   } catch(e) {
     setSyncStatus('err', 'Error de conexión');
-    document.getElementById('ocGrid').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>No se pudo conectar</h3><p>Verifica que el Apps Script esté publicado correctamente.</p></div>`;
+    document.getElementById('ocGrid').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>No se pudo conectar</h3><p>${e.message}</p></div>`;
   }
 }
 async function saveOC(oc) {
   setSyncStatus('syncing', 'Guardando…');
   try {
-    await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'save_oc', oc }) });
+    const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'save_oc', oc }) });
+    await parseApiResponse(res);
     setSyncStatus('ok', 'Guardado ✓');
-  } catch(e) { setSyncStatus('err', 'Error al guardar'); toast('⚠ No se pudo guardar en Sheets'); }
+  } catch(e) { setSyncStatus('err', 'Error al guardar'); toast('⚠ ' + e.message); }
 }
 async function deleteOC(id) {
   setSyncStatus('syncing', 'Eliminando…');
   try {
-    await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_oc', id }) });
+    const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_oc', id }) });
+    await parseApiResponse(res);
     setSyncStatus('ok', 'Eliminado ✓');
-  } catch(e) { setSyncStatus('err', 'Error al eliminar'); }
+  } catch(e) { setSyncStatus('err', 'Error al eliminar'); toast('⚠ ' + e.message); }
 }
 
 // ── GD API ─────────────────────────────────────────────────────────────────
@@ -441,28 +459,31 @@ async function loadGDs() {
   document.getElementById('gdGrid').innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando desde Google Sheets…</p></div>';
   try {
     const res = await fetch(API + '?action=get_gds', { redirect: 'follow' });
-    const data = await res.json();
+    const data = await parseApiResponse(res);
     gds = Array.isArray(data) && data.every(r => r.tipo !== undefined) ? data : [];
     gds.sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
     setSyncStatus('ok', 'Sincronizado');
     renderGDs();
   } catch(e) {
-    gds = []; setSyncStatus('ok', 'Sincronizado'); renderGDs();
+    setSyncStatus('err', 'Error de conexión');
+    document.getElementById('gdGrid').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><h3>No se pudo conectar</h3><p>${e.message}</p></div>`;
   }
 }
 async function saveGD(gd) {
   setSyncStatus('syncing', 'Guardando…');
   try {
-    await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'save_gd', gd }) });
+    const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'save_gd', gd }) });
+    await parseApiResponse(res);
     setSyncStatus('ok', 'Guardado ✓');
-  } catch(e) { setSyncStatus('err', 'Error al guardar'); toast('⚠ No se pudo guardar'); }
+  } catch(e) { setSyncStatus('err', 'Error al guardar'); toast('⚠ ' + e.message); }
 }
 async function deleteGDById(id) {
   setSyncStatus('syncing', 'Eliminando…');
   try {
-    await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_gd', id }) });
+    const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_gd', id }) });
+    await parseApiResponse(res);
     setSyncStatus('ok', 'Eliminado ✓');
-  } catch(e) { setSyncStatus('err', 'Error al eliminar'); }
+  } catch(e) { setSyncStatus('err', 'Error al eliminar'); toast('⚠ ' + e.message); }
 }
 
 // ── OC COMPUTE ─────────────────────────────────────────────────────────────
@@ -707,10 +728,10 @@ async function uploadDoc(ocId, input) {
     const base64 = e.target.result.split(',')[1];
     try {
       const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'upload_file', data: base64, mimeType: file.type, filename: file.name }) });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       if (data.ok) { const oc = ocs.find(o=>o.id===ocId); if (oc) { if (!oc.docs) oc.docs = []; oc.docs.push({ name: file.name, url: data.url, id: data.id }); } saveOC(oc); renderOCs(); toast('✓ Documento adjuntado'); }
       else { toast('⚠ Error al subir archivo'); }
-    } catch(err) { toast('⚠ Error de conexión'); }
+    } catch(err) { toast('⚠ ' + err.message); }
     input.value = '';
   };
   reader.readAsDataURL(file);
@@ -771,10 +792,10 @@ async function uploadGDDoc(gdId, input) {
     const base64 = ev.target.result.split(',')[1];
     try {
       const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'upload_file', data: base64, mimeType: file.type, filename: file.name }) });
-      const data = await res.json();
+      const data = await parseApiResponse(res);
       if (data.ok) { const gd = gds.find(g=>g.id===gdId); if (gd) { if (!gd.docs) gd.docs = []; gd.docs.push({ name: file.name, url: data.url, id: data.id }); } saveGD(gd); renderGDs(); toast('✓ Documento adjuntado'); }
       else { toast('⚠ Error al subir archivo'); }
-    } catch(err) { toast('⚠ Error de conexión'); }
+    } catch(err) { toast('⚠ ' + err.message); }
     input.value = '';
   };
   reader.readAsDataURL(file);
