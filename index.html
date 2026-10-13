@@ -438,7 +438,9 @@ async function parseApiResponse(res) {
   try {
     data = await res.json();
   } catch (e) {
-    throw new Error('El Apps Script necesita reautorización — avisa a Nathan');
+    const err = new Error('El Apps Script no respondió bien (puede ser un error temporal o falta reautorizar). Intenta de nuevo y, si sigue, avisa a Nathan.');
+    err.noJson = true;
+    throw err;
   }
   if (data && data.error) throw new Error(data.message || 'Error del Apps Script');
   return data;
@@ -1116,8 +1118,15 @@ async function goRegistrar(d) {
   const body = goEmitida
     ? { action: 'actualizar_oc', num: goEmitida.num, oc: d, usuario: currentUserEmail }
     : { action: 'emitir_oc', oc: d, usuario: currentUserEmail };
-  const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
-  const data = await parseApiResponse(res);
+  let data;
+  try {
+    const res = await fetch(API, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+    data = await parseApiResponse(res);
+  } catch(e) {
+    // Sin respuesta legible no sabemos si el backend alcanzó a registrar la OC
+    if (e.noJson || e instanceof TypeError) e.message += " Antes de reintentar, revisa la hoja 'OC Emitidas' por si el número ya quedó registrado.";
+    throw e;
+  }
   const num = Number(data && data.num);
   if (!data || !data.ok || !num) throw new Error('El Apps Script no reconoce ' + body.action + ' — falta desplegar el backend nuevo');
   return num;
@@ -1141,7 +1150,7 @@ async function goGenerate() {
     setSyncStatus('ok', 'OC ' + num + (reemision ? ' actualizada ✓' : ' emitida ✓'));
   } catch(e) {
     setSyncStatus('err', reemision ? 'Error al actualizar OC' : 'Error al emitir OC');
-    toast('⚠ ' + e.message + ' — no se generó el PDF');
+    toast('⚠ No se generó el PDF. ' + e.message);
     btn.disabled = false; btn.textContent = goEmitida ? 'Reemitir OC ' + goEmitida.num : 'Generar OC';
     return;
   }
@@ -1283,7 +1292,8 @@ function fmtDate(d) { if(!d) return '—'; const [y,m,day]=d.split('-'); return 
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'), 2200);
+  // Los mensajes largos (errores con instrucciones) quedan más tiempo en pantalla
+  setTimeout(()=>el.classList.remove('show'), Math.max(2200, msg.length * 60));
 }
 </script>
 </body>
