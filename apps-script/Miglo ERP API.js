@@ -2,6 +2,10 @@ const SHEET_NAME = 'Hoja 1';
 const GD_SHEET_NAME = 'GDs';
 const FACTURAS_FOLDER_ID = '1aiQKdQVhUcdGnZnipI78vPkm5b_nW5dx';
 const ALERT_EMAIL = 'nathan.wechsler@primechef.cl';
+const OC_EMITIDAS_SHEET_NAME = 'OC Emitidas';
+const OC_EMITIDAS_HEADERS = ['N° OC', 'Fecha', 'Proveedor', 'RUT', 'Subtotal', 'IVA', 'Total', 'Emitida por', 'Timestamp', 'JSON'];
+const OC_NUM_PISO = 1120; // la primera OC emitida es la 1121
+const OC_IVA = 0.19;
 
 function doGet(e) {
   try {
@@ -14,6 +18,11 @@ function doGet(e) {
       if (data.length <= 1) return jsonResponse([]);
       const rows = data.slice(1).map(r => { try { return JSON.parse(r[1]); } catch(e) { return null; } }).filter(Boolean);
       return jsonResponse(rows);
+    }
+
+    // GET siguiente N° de OC (vista previa, no reserva)
+    if (e.parameter.action === 'get_next_oc') {
+      return jsonResponse({ ok: true, next: maxOcNum_(getOcEmitidasSheet_(ss)) + 1 });
     }
 
     // GET para OCs (default)
@@ -97,6 +106,39 @@ function doPost(e) {
       return jsonResponse({ ok: true });
     }
 
+    // ── EMITIR OC (asigna correlativo) ──────────────────────────────────────
+    if (payload.action === 'emitir_oc') {
+      validarOcEmitida_(payload.oc);
+      return conLockOc_(() => {
+        const ocSheet = getOcEmitidasSheet_(ss);
+        const num = maxOcNum_(ocSheet) + 1;
+        ocSheet.appendRow(filaOcEmitida_(num, payload.oc, payload.usuario || ''));
+        SpreadsheetApp.flush();
+        return jsonResponse({ ok: true, num: num });
+      });
+    }
+
+    // ── ACTUALIZAR OC EMITIDA (reemisión con el mismo N°) ───────────────────
+    if (payload.action === 'actualizar_oc') {
+      const num = Number(payload.num);
+      if (!num) throw new Error('Falta el N° de la OC a actualizar');
+      validarOcEmitida_(payload.oc);
+      return conLockOc_(() => {
+        const ocSheet = getOcEmitidasSheet_(ss);
+        const data = ocSheet.getDataRange().getValues();
+        for (let i = 1; i < data.length; i++) {
+          if (Number(data[i][0]) === num) {
+            // Se conserva quién la emitió originalmente (columna 8)
+            ocSheet.getRange(i + 1, 1, 1, OC_EMITIDAS_HEADERS.length)
+              .setValues([filaOcEmitida_(num, payload.oc, data[i][7])]);
+            SpreadsheetApp.flush();
+            return jsonResponse({ ok: true, num: num });
+          }
+        }
+        throw new Error('La OC N° ' + num + ' no existe en "' + OC_EMITIDAS_SHEET_NAME + '"');
+      });
+    }
+
     // ── SUBIR ARCHIVO ────────────────────────────────────────────────────────
     if (payload.action === 'upload_file') {
       const folder = DriveApp.getFolderById(FACTURAS_FOLDER_ID);
@@ -113,6 +155,58 @@ function doPost(e) {
     return jsonResponse({ ok: false });
   } catch (err) {
     return errorResponse(err);
+  }
+}
+
+// ── OC EMITIDAS: helpers ─────────────────────────────────────────────────
+function getOcEmitidasSheet_(ss) {
+  let sheet = ss.getSheetByName(OC_EMITIDAS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(OC_EMITIDAS_SHEET_NAME);
+    sheet.appendRow(OC_EMITIDAS_HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// Mayor N° de la columna A leído como número (ignora celdas vacías o no
+// numéricas), con piso OC_NUM_PISO.
+function maxOcNum_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return OC_NUM_PISO;
+  return sheet.getRange(2, 1, lastRow - 1, 1).getValues().reduce((max, r) => {
+    const n = Number(r[0]);
+    return isFinite(n) && n > max ? n : max;
+  }, OC_NUM_PISO);
+}
+
+function validarOcEmitida_(oc) {
+  if (!oc || !String(oc.proveedor || '').trim()) throw new Error('La OC no tiene proveedor');
+  if (!Array.isArray(oc.items) || !oc.items.length) throw new Error('La OC no tiene productos');
+}
+
+// Totales calculados en el servidor con la misma regla del PDF (IVA redondeado).
+function filaOcEmitida_(num, oc, emitidaPor) {
+  const subtotal = oc.items.reduce((a, it) => a + (Number(it.un) || 0) * (Number(it.valor) || 0), 0);
+  const iva = Math.round(subtotal * OC_IVA);
+  const completa = Object.assign({}, oc, { num: num });
+  return [num, oc.fecha || '', oc.proveedor, oc.rut || '', subtotal, iva, subtotal + iva,
+          emitidaPor || '', new Date(), JSON.stringify(completa)];
+}
+
+// Ejecuta fn bajo el lock del script para que leer el máximo y escribir la
+// fila sea atómico aunque dos personas emitan al mismo tiempo.
+function conLockOc_(fn) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (e) {
+    throw new Error('El servidor está ocupado emitiendo otra OC. Intenta de nuevo en unos segundos.');
+  }
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
   }
 }
 
